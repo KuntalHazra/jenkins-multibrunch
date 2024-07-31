@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         PYTHON_SCRIPT = 'main.py' // Define the Python script path
+        GIT_CREDENTIALS_ID = 'git-credentials' // Jenkins credentials ID
     }
 
     stages {
@@ -57,9 +58,9 @@ pipeline {
                     }
 
                     // Push the changes to the remote dev branch using credentials
-                    withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: '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', usernameVariable: 'KuntalHazra')]) {
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
                         sh '''
-                            git remote set-url origin https://KuntalHazra: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@github.com/KuntalHazra/jenkins-multibranch.git
+                            git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
                             git push origin dev
                         '''
                     }
