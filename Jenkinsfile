@@ -53,8 +53,14 @@ pipeline {
                     // Checkout the dev branch
                     sh 'git checkout dev'
 
-                    // Merge changes from test into dev
-                    sh 'git merge origin/test'
+                    // Attempt to merge changes from test into dev
+                    def mergeResult = sh(script: 'git merge origin/test', returnStatus: true)
+
+                    if (mergeResult != 0) {
+                        // Merge conflict detected
+                        echo "Merge conflict occurred. Please resolve the conflict manually."
+                        error "Merge conflict occurred. Manual intervention required."
+                    }
 
                     // Push the changes to the remote dev branch using credentials
                     withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
