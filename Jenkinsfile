@@ -2,71 +2,75 @@ pipeline {
     agent any
 
     environment {
-        PYTHON_SCRIPT = 'main.py' // Define the Python script path
+        PYTHON_SCRIPT = 'main.py' // Replace with actual path
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the current branch
                 checkout scm
             }
         }
 
         stage('Setup Python') {
+            when {
+                expression {
+                    return branch =~ /(feature|hotfix)/ // Adjust branches as needed
+                }
+            }
             steps {
                 script {
-                    // Print the branch name being built
-                    echo "Building branch: ${env.BRANCH_NAME}"
-
-                    // Ensure Python is installed
                     sh 'python3 --version'
                 }
             }
         }
 
-        stage('Run Python Script') {
+        stage('Run Tests') {
             steps {
                 script {
-                    // Run the Python script
-                    sh "python3 ${env.PYTHON_SCRIPT}"
+                    // Replace with your actual test commands
+                    sh 'python3 -m unittest discover -s tests'
+                }
+            }
+        }
+
+        stage('Code Review and Approval') {
+            when {
+                expression {
+                    return currentBuild.currentResult == 'SUCCESS'
+                }
+            }
+            steps {
+                script {
+                    // Trigger code review process (e.g., email, chat)
+                    // Wait for manual approval
                 }
             }
         }
 
         stage('Merge Test into Dev') {
             when {
-                // Only execute this stage if the current branch is test
-                branch 'test'
+                expression {
+                    return currentBuild.currentResult == 'SUCCESS' && env.BRANCH_NAME == 'test' && isApproved()
+                }
             }
             steps {
                 script {
-                    echo "Merging changes from test into dev"
-
-                    // Configure git user for the merge operation
                     sh 'git config user.name "KuntalHazra"'
                     sh 'git config user.email "kuntalhazra16@gmail.com"'
-
-                    // Fetch the latest changes
                     sh 'git fetch origin'
-
-                    // Checkout the dev branch
                     sh 'git checkout dev'
 
-                    // Attempt to merge changes from test into dev
                     def mergeResult = sh(script: 'git merge origin/test', returnStatus: true)
-
                     if (mergeResult != 0) {
-                        // Merge conflict detected
-                        echo "Merge conflict occurred. Please resolve the conflict manually."
-                        error "Merge conflict occurred. Manual intervention required."
+                        error "Merge conflict occurred. Please resolve manually."
                     }
 
-                    // Push the changes to the remote dev branch using credentials
+                    // Push to remote dev branch (replace with your credentials)
                     withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
                         sh """
-                            git remote set-url origin https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
-                            git push origin dev
+                        git remote set-url origin https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/jenkins-multibranch.git
+                        git push origin dev
                         """
                     }
                 }
