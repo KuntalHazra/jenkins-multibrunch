@@ -5,7 +5,7 @@ pipeline {
         PYTHON_SCRIPT = 'main.py' // Define the Python script path
         GIT_URL = 'https://github.com/KuntalHazra/jenkins-multibrunch.git'
         GIT_CREDENTIALS = 'git-credentials' // Make sure this credential ID exists in Jenkins
-        GIT_REPO = 'github.com/KuntalHazra/jenkins-multibrunch.git' // Repository URL for push
+        GIT_REPO = 'https://github.com/KuntalHazra/jenkins-multibrunch.git' // Repository URL for push
     }
 
     stages {
