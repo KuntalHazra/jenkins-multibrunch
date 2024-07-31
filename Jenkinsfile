@@ -64,7 +64,10 @@ pipeline {
 
                     // Push the changes to the remote dev branch using credentials
                     withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
-                        sh 'git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git dev'
+                        sh """
+                            git remote set-url origin https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
+                            git push origin dev
+                        """
                     }
                 }
             }
