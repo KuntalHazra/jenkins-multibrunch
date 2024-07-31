@@ -8,19 +8,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the current branch
-                checkout scm
+                checkout scm // Checkout the code from the current branch
             }
         }
 
         stage('Setup Python') {
             steps {
                 script {
-                    // Print the branch name being built
-                    echo "Building branch: ${env.BRANCH_NAME}"
-
-                    // Ensure Python is installed
-                    sh 'python3 --version'
+                    echo "Building branch: ${env.BRANCH_NAME}" // Print the branch name being built
+                    sh 'python3 --version' // Ensure Python is installed
                 }
             }
         }
@@ -28,16 +24,14 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 script {
-                    // Run the Python script
-                    sh "python3 ${env.PYTHON_SCRIPT}"
+                    sh "python3 ${env.PYTHON_SCRIPT}" // Run the Python script
                 }
             }
         }
 
         stage('Merge Test into Dev') {
             when {
-                // Only execute this stage if the current branch is test
-                branch 'test'
+                branch 'test' // Only execute this stage if the current branch is 'test'
             }
             steps {
                 script {
@@ -63,11 +57,11 @@ pipeline {
                     }
 
                     // Push the changes to the remote dev branch using credentials
-                    withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
-                        sh """
+                    withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: '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', usernameVariable: 'KuntalHazra')]) {
+                        sh '''
                             git remote set-url origin https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
                             git push origin dev
-                        """
+                        '''
                     }
                 }
             }
