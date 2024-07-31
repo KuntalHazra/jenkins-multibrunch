@@ -3,9 +3,24 @@ pipeline {
 
     environment {
         PYTHON_SCRIPT = 'main.py' // Define the Python script path
+        GIT_REPO = 'https://github.com/KuntalHazra/jenkins-multibrunch.git'
+        // GITHUB_USER and GITHUB_TOKEN will be populated using credentials
     }
 
     stages {
+        stage('Initialize') {
+            steps {
+                // Retrieve credentials for GitHub at the start
+                withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
+                    script {
+                        // Store credentials in environment variables
+                        env.GITHUB_USER = GITHUB_USER
+                        env.GITHUB_TOKEN = GITHUB_TOKEN
+                    }
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 // Checkout the code from the current branch
@@ -56,8 +71,8 @@ pipeline {
                     // Merge changes from test into dev
                     sh 'git merge origin/test'
 
-                    // Push the changes to the remote dev branch
-                    sh 'git push origin dev'
+                    // Push the changes to the remote dev branch using stored credentials
+                    sh "git push https://${env.GITHUB_USER}:${env.GITHUB_TOKEN}@${env.GIT_REPO} dev"
                 }
             }
         }
