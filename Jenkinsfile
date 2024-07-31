@@ -2,74 +2,58 @@ pipeline {
     agent any
 
     environment {
-        PYTHON_SCRIPT = 'main.py' // Define the Python script path
+        // GitHub credentials ID in Jenkins
+        GIT_CREDENTIALS_ID = 'git-credentials'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the current branch
-                checkout scm
+                // Checkout the 'dev' branch
+                git branch: 'dev', 
+                    credentialsId: env.GIT_CREDENTIALS_ID,
+                    url: 'https://github.com/KuntalHazra/jenkins-multibranch.git'
             }
         }
-
-        stage('Setup Python') {
-            steps {
-                script {
-                    // Print the branch name being built
-                    echo "Building branch: ${env.BRANCH_NAME}"
-
-                    // Ensure Python is installed
-                    sh 'python3 --version'
-                }
-            }
-        }
-
-        stage('Run Python Script') {
-            steps {
-                script {
-                    // Run the Python script
-                    sh "python3 ${env.PYTHON_SCRIPT}"
-                }
-            }
-        }
-
         stage('Merge Test into Dev') {
-            when {
-                // Only execute this stage if the current branch is test
-                branch 'test'
-            }
             steps {
                 script {
-                    echo "Merging changes from test into dev"
-
-                    // Configure git user for the merge operation
-                    sh 'git config user.name "KuntalHazra"'
-                    sh 'git config user.email "kuntalhazra16@gmail.com"'
-
-                    // Fetch the latest changes
-                    sh 'git fetch origin'
-
-                    // Checkout the dev branch
-                    sh 'git checkout dev'
-
-                    // Merge changes from test into dev
-                    sh 'git merge origin/test'
-
-                    // Push the changes to the remote dev branch using credentials
-                    withCredentials([usernamePassword(credentialsId: 'git-credentials', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
-                        sh 'git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git dev'
-                    }
+                    // Merge the 'test' branch into the current branch (dev)
+                    sh '''
+                    git config --global user.email "kuntalhazra16@gmail.com"
+                    git config --global user.name "KuntalHazra"
+                    git fetch origin test
+                    git merge origin/test || true
+                    '''
+                }
+            }
+        }
+        stage('Execute Python Script') {
+            steps {
+                script {
+                    // Execute the Python script
+                    sh 'python3 main.py'
+                }
+            }
+        }
+        stage('Push Changes') {
+            steps {
+                script {
+                    // Push the merged changes back to the dev branch
+                    sh '''
+                    git push origin dev || true
+                    '''
                 }
             }
         }
     }
 
     post {
-        always {
-            script {
-                echo "Build complete for branch: ${env.BRANCH_NAME}"
-            }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
