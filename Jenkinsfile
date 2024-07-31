@@ -3,21 +3,16 @@ pipeline {
 
     environment {
         PYTHON_SCRIPT = 'main.py' // Define the Python script path
-        GIT_REPO = 'https://github.com/KuntalHazra/jenkins-multibrunch.git'
-        // GITHUB_USER and GITHUB_TOKEN will be populated using credentials
+        GIT_URL = 'https://github.com/KuntalHazra/jenkins-multibrunch.git'
+        GIT_CREDENTIALS = 'git-credentials' // Make sure this credential ID exists in Jenkins
+        GIT_REPO = 'github.com/KuntalHazra/jenkins-multibrunch.git' // Repository URL for push
     }
 
     stages {
         stage('Initialize') {
             steps {
-                // Retrieve credentials for GitHub at the start
-                withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
-                    script {
-                        // Store credentials in environment variables
-                        env.GITHUB_USER = GITHUB_USER
-                        env.GITHUB_TOKEN = GITHUB_TOKEN
-                    }
-                }
+                // Clone the repository using credentials
+                git url: env.GIT_URL, credentialsId: env.GIT_CREDENTIALS
             }
         }
 
@@ -72,7 +67,9 @@ pipeline {
                     sh 'git merge origin/test'
 
                     // Push the changes to the remote dev branch using stored credentials
-                    sh "git push https://${env.GITHUB_USER}:${env.GITHUB_TOKEN}@${env.GIT_REPO} dev"
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS, passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
+                        sh "git push https://${env.GITHUB_USER}:${env.GITHUB_TOKEN}@${env.GIT_REPO} dev"
+                    }
                 }
             }
         }
