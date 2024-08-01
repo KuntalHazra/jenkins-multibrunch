@@ -2,66 +2,67 @@ pipeline {
     agent any
 
     environment {
-        // GitHub credentials ID in Jenkins
-        GIT_CREDENTIALS_ID = 'git-credentials'
-        // GitHub repository URL
-        GIT_REPO_URL = 'https://github.com/KuntalHazra/jenkins-multibranch.git'
+        PYTHON_SCRIPT = 'main.py' // Define the Python script path
+        GIT_CREDENTIALS_ID = 'git-credentials' // Jenkins credentials ID
     }
 
     stages {
-        stage('Checkout Dev Branch') {
+        stage('Checkout') {
+            steps {
+                checkout scm // Checkout the code from the current branch
+            }
+        }
+
+        stage('Setup Python') {
             steps {
                 script {
-                    // Clone the repository and checkout the dev branch
-                    checkout([$class: 'GitSCM', 
-                              branches: [[name: '*/dev']],
-                              userRemoteConfigs: [[
-                                  url: env.GIT_REPO_URL,
-                                  credentialsId: env.GIT_CREDENTIALS_ID
-                              ]]])
+                    echo "Building branch: ${env.BRANCH_NAME}" // Print the branch name being built
+                    sh 'python3 --version' // Ensure Python is installed
                 }
             }
         }
+
+        stage('Run Python Script') {
+            steps {
+                script {
+                    sh "python3 ${env.PYTHON_SCRIPT}" // Run the Python script
+                }
+            }
+        }
+
         stage('Merge Test into Dev') {
-            steps {
-                script {
-                    // Attempt to merge the test branch into dev
-                    try {
-                        sh '''
-                        git fetch origin test
-                        git merge origin/test
-                        '''
-                    } catch (Exception e) {
-                        echo 'Merge conflict detected!'
-                        // Optionally handle merge conflicts
-                        // sh 'git merge --abort'  // Uncomment this to abort the merge in case of conflicts
-                        error 'Merge failed due to conflicts. Please resolve manually.'
-                    }
-                }
+            when {
+                branch 'test' // Only execute this stage if the current branch is 'test'
             }
-        }
-        stage('Execute Python Script') {
             steps {
                 script {
-                    // Execute the Python script and handle errors
-                    try {
-                        sh 'python3 main.py'
-                    } catch (Exception e) {
-                        error 'Python script execution failed!'
+                    echo "Merging changes from test into dev"
+
+                    // Configure git user for the merge operation
+                    sh 'git config user.name "KuntalHazra"'
+                    sh 'git config user.email "kuntalhazra16@gmail.com"'
+
+                    // Fetch the latest changes
+                    sh 'git fetch origin'
+
+                    // Checkout the dev branch
+                    sh 'git checkout dev'
+
+                    // Attempt to merge changes from test into dev
+                    def mergeResult = sh(script: 'git merge origin/test', returnStatus: true)
+
+                    if (mergeResult != 0) {
+                        // Merge conflict detected
+                        echo "Merge conflict occurred. Please resolve the conflict manually."
+                        error "Merge conflict occurred. Manual intervention required."
                     }
-                }
-            }
-        }
-        stage('Push Changes to Dev') {
-            steps {
-                script {
-                    // Push changes back to the dev branch
-                    try {
+
+                    // Push the changes to the remote dev branch using credentials
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
                         sh '''
-                        git push origin dev
+                            git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
+                            git push origin dev
                         '''
-                    } catch (Exception e) {
-                        error 'Failed to push changes to the dev branch.'
                     }
                 }
             }
@@ -69,11 +70,10 @@ pipeline {
     }
 
     post {
-        success {
-            echo 'Pipeline succeeded! Changes merged and script executed.'
-        }
-        failure {
-            echo 'Pipeline failed! Check logs for details.'
+        always {
+            script {
+                echo "Build complete for branch: ${env.BRANCH_NAME}"
+            }
         }
     }
 }
