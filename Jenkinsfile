@@ -1,20 +1,12 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Load Environment Variables') {
-            steps {
-                script {
-                    // Load .env file and export variables
-                    def envFileContent = readFile('.env')
-                    envFileContent.split('\n').each { line ->
-                        def (key, value) = line.split('=')
-                        env[key] = value
-                    }
-                }
-            }
-        }
+    environment {
+        PYTHON_SCRIPT = 'main.py' // Define the Python script path
+        GIT_CREDENTIALS_ID = 'git-credentials' // Jenkins credentials ID
+    }
 
+    stages {
         stage('Checkout') {
             steps {
                 checkout scm // Checkout the code from the current branch
@@ -47,8 +39,8 @@ pipeline {
                     echo "Merging changes from test into dev"
 
                     // Configure git user for the merge operation
-                    sh "git config user.name '${env.GIT_NAME}'"
-                    sh "git config user.email '${env.GIT_EMAIL}'"
+                    sh 'git config user.name "KuntalHazra"'
+                    sh 'git config user.email "kuntalhazra16@gmail.com"'
 
                     // Fetch the latest changes
                     sh 'git fetch origin'
@@ -67,10 +59,10 @@ pipeline {
 
                     // Push the changes to the remote dev branch using credentials
                     withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
-                        sh """
-                            git remote set-url origin https://${env.GIT_USER}:${env.GIT_TOKEN}@${env.GITHUB_REPO_URL}
+                        sh '''
+                            git remote set-url origin https://${credentialsId}${usernameVariable}:${passwordVariable}@github.com/KuntalHazra/jenkins-multibranch.git
                             git push origin dev
-                        """
+                        '''
                     }
                 }
             }
