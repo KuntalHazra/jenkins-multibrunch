@@ -13,24 +13,27 @@ pipeline {
             }
         }
 
-        stage('Check for Changes in main.py') {
+        stage('Setup Python') {
             steps {
                 script {
-                    // Check if main.py has changed
-                    def changes = sh(script: 'git diff --name-only HEAD~1 HEAD', returnStdout: true).trim()
-                    if (changes.contains('main.py')) {
-                        echo "Changes detected in main.py. Proceeding with merge."
-                        currentBuild.result = 'SUCCESS'
-                    } else {
-                        echo "No changes in main.py. Skipping merge."
-                        currentBuild.result = 'SUCCESS'
-                        return
-                    }
+                    echo "Building branch: ${env.BRANCH_NAME}" // Print the branch name being built
+                    sh 'python3 --version' // Ensure Python is installed
+                }
+            }
+        }
+
+        stage('Run Python Script') {
+            steps {
+                script {
+                    sh "python3 ${env.PYTHON_SCRIPT}" // Run the Python script
                 }
             }
         }
 
         stage('Merge Test into Dev') {
+            when {
+                branch 'test' // Only execute this stage if the current branch is 'test'
+            }
             steps {
                 script {
                     echo "Merging changes from test into dev"
@@ -39,11 +42,11 @@ pipeline {
                     sh 'git config user.name "KuntalHazra"'
                     sh 'git config user.email "kuntalhazra16@gmail.com"'
 
-                    // Fetch the latest changes from the remote repository
+                    // Fetch the latest changes
                     sh 'git fetch origin'
 
-                    // Checkout the dev branch (create it if it doesn't exist)
-                    sh 'git checkout -b dev origin/dev || git checkout dev'
+                    // Checkout the dev branch
+                    sh 'git checkout dev'
 
                     // Attempt to merge changes from test into dev
                     def mergeResult = sh(script: 'git merge origin/test', returnStatus: true)
@@ -55,7 +58,7 @@ pipeline {
                     }
 
                     // Push the changes to the remote dev branch using credentials
-                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
+                    withCredentials([usernamePassword(credentialsId:GIT_CREDENTIALS_ID, passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
                         sh '''
                             git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
                             git push origin dev
@@ -74,3 +77,4 @@ pipeline {
         }
     }
 }
+
