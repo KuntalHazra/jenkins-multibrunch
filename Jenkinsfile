@@ -57,7 +57,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh '''
                             # Use the credentials to set the remote URL and push changes
-                            git remote set-url origin https://$usernameVariable:$passwordVariable@github.com/KuntalHazra/jenkins-multibranch.git
+                            git remote set-url origin https://$GIT_USERNAME:$GIT_PASSWORD@github.com/KuntalHazra/jenkins-multibranch.git
                             git push origin ${TARGET_BRANCH}
                         '''
                     }
