@@ -54,8 +54,12 @@ pipeline {
                     sh "git merge origin/${env.SOURCE_BRANCH}"
 
                     // Push the merged changes back to the remote repository
-                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: env.GIT_CREDENTIALS_ID, usernameVariable: env.GIT_CREDENTIALS_ID)]) {
-                        sh "git push https://${passwordVariable}:${usernameVariable}@github.com/KuntalHazra/jenkins-multibranch.git ${env.TARGET_BRANCH}"
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        sh '''
+                            # Use the credentials to set the remote URL and push changes
+                            git remote set-url origin https://$GIT_USERNAME:$GIT_PASSWORD@github.com/KuntalHazra/jenkins-multibranch.git
+                            git push origin ${TARGET_BRANCH}
+                        '''
                     }
                 }
             }
