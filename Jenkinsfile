@@ -55,7 +55,7 @@ pipeline {
 
                     // Push the merged changes back to the remote repository
                     withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: env.GIT_CREDENTIALS_ID, usernameVariable: env.GIT_CREDENTIALS_ID)]) {
-                        sh "git push https://${env.GIT_CREDENTIALS_ID}:${env.GIT_CREDENTIALS_ID}@github.com/KuntalHazra/jenkins-multibranch.git ${env.TARGET_BRANCH}"
+                        sh "git push https://${passwordVariable}:${usernameVariable}@github.com/KuntalHazra/jenkins-multibranch.git ${env.TARGET_BRANCH}"
                     }
                 }
             }
