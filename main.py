@@ -13,6 +13,6 @@ print("substaction of a and b",c)
 
 #multipication
 a=12
-b=2
+b=3
 c=(a*b)
 print("multipication of a and b",c)
