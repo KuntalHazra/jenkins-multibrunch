@@ -2,70 +2,28 @@ pipeline {
     agent any
 
     environment {
-        PYTHON_SCRIPT = 'main.py' // Define the Python script path
-        SOURCE_BRANCH = 'test' // The branch with changes
-        TARGET_BRANCH = 'dev' // The branch to merge changes into
-        GIT_CREDENTIALS_ID = 'git-credentials' // Your Jenkins GitHub credentials ID
+        GIT_CREDENTIALS_ID = 'git-credentials'  // The ID of the credentials you added in Jenkins
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Test Branch') {
             steps {
-                // Checkout the code from the current branch
-                checkout scm
+                // Checkout the test branch
+                git branch: 'test', url: 'https://github.com/KuntalHazra/jenkins-multibrunch.git'
             }
         }
-
-        stage('Setup Python') {
+        stage('Merge with Dev Branch') {
             steps {
                 script {
-                    // Print the branch name being built
-                    echo "Building branch: ${env.BRANCH_NAME}"
-
-                    // Ensure Python is installed
-                    sh 'python3 --version'
-                }
-            }
-        }
-
-        stage('Run Python Script') {
-            steps {
-                script {
-                    // Run the Python script
-                    sh "python3 ${env.PYTHON_SCRIPT}"
-                }
-            }
-        }
-
-        stage('Merge Changes') {
-            when {
-                branch env.SOURCE_BRANCH
-            }
-            steps {
-                script {
-                    // Configure Git user
-                    sh 'git config user.name "KuntalHazra"'
-                    sh 'git config user.email "kuntalhazra16@gmail.com"'
-
-                    // Checkout the target branch
-                    sh "git checkout ${env.TARGET_BRANCH}"
-
-                    // Merge changes from source branch into target branch
-                    sh "git merge origin/${env.SOURCE_BRANCH}"
-
-                    // Push the merged changes back to the remote repository
-                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/KuntalHazra/jenkins-multibranch.git ${env.TARGET_BRANCH}"
+                    // Merge changes from test branch to dev branch
+                    sh 'git checkout dev'
+                    sh 'git merge test'
+                    
+                    // Push changes to dev branch
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh 'https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/KuntalHazra/jenkins-multibrunch.git dev'
                     }
                 }
-            }
-        }
-    }
-
-    post {
-        always {
-            script {
-                echo "Build complete for branch: ${env.BRANCH_NAME}"
             }
         }
     }
