@@ -3,21 +3,27 @@ pipeline {
 
     environment {
         PYTHON_SCRIPT = 'main.py' // Define the Python script path
-        GIT_CREDENTIALS_ID = 'git-credentials' // Jenkins credentials ID
+        SOURCE_BRANCH = 'test' // The branch with changes
+        TARGET_BRANCH = 'dev' // The branch to merge changes into
+        GIT_CREDENTIALS_ID = 'git-credentials' // Your Jenkins GitHub credentials ID
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm // Checkout the code from the current branch
+                // Checkout the code from the current branch
+                checkout scm
             }
         }
 
         stage('Setup Python') {
             steps {
                 script {
-                    echo "Building branch: ${env.BRANCH_NAME}" // Print the branch name being built
-                    sh 'python3 --version' // Ensure Python is installed
+                    // Print the branch name being built
+                    echo "Building branch: ${env.BRANCH_NAME}"
+
+                    // Ensure Python is installed
+                    sh 'python3 --version'
                 }
             }
         }
@@ -25,43 +31,34 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 script {
-                    sh "python3 ${env.PYTHON_SCRIPT}" // Run the Python script
+                    // Run the Python script
+                    sh "python3 ${env.PYTHON_SCRIPT}"
                 }
             }
         }
 
-        stage('Merge Test into Dev') {
+        stage('Merge Changes') {
             when {
-                branch 'test' // Only execute this stage if the current branch is 'test'
+                branch env.SOURCE_BRANCH
             }
             steps {
                 script {
-                    echo "Merging changes from test into dev"
-
-                    // Configure git user for the merge operation
+                    // Configure Git user
                     sh 'git config user.name "KuntalHazra"'
                     sh 'git config user.email "kuntalhazra16@gmail.com"'
 
-                    // Fetch the latest changes
-                    sh 'git fetch origin'
+                    // Checkout the target branch
+                    sh "git checkout ${env.TARGET_BRANCH}"
 
-                    // Checkout the dev branch
-                    sh 'git checkout dev'
+                    // Merge changes from source branch into target branch
+                    sh "git merge origin/${env.SOURCE_BRANCH}"
 
-                    // Attempt to merge changes from test into dev
-                    def mergeResult = sh(script: 'git merge origin/test', returnStatus: true)
-
-                    if (mergeResult != 0) {
-                        // Merge conflict detected
-                        echo "Merge conflict occurred. Please resolve the conflict manually."
-                        error "Merge conflict occurred. Manual intervention required."
-                    }
-
-                    // Push the changes to the remote dev branch using credentials
-                    withCredentials([usernamePassword(credentialsId:'GIT_CREDENTIALS_ID', passwordVariable: 'GIT_TOKEN', usernameVariable: 'GIT_USER')]) {
+                    // Push the merged changes back to the remote repository
+                    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh '''
-                            git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/KuntalHazra/jenkins-multibranch.git
-                            git push origin dev
+                            # Use the credentials to set the remote URL and push changes
+                            git remote set-url origin https://$GIT_USERNAME:$GIT_PASSWORD@github.com/KuntalHazra/jenkins-multibranch.git
+                            git push origin ${TARGET_BRANCH}
                         '''
                     }
                 }
