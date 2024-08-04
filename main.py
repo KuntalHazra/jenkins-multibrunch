@@ -16,3 +16,8 @@ a=12
 b=3
 c=(a*b)
 print("multipication of a and b",c)
+
+a=12
+b=3
+c=(a/b)
+print(c)
